@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 
 from app.services.duplicate_finder import find_duplicates
+from app.services.duplicate_remover import remove_duplicates
 from app.services.file_scanner import scan_files
 from app.utils.path_utils import validate_directory
 
@@ -41,6 +42,13 @@ def main() -> None:
             print(f"   {file.path}")
 
         print()
+
+    user_choice = input("Хотите удалить дубликаты? (y/n): ").strip().lower()
+
+    if user_choice == "y":
+        remove_duplicates(duplicates)
+    else:
+        print("Удаление отменено.")
 
 
 if __name__ == "__main__":
