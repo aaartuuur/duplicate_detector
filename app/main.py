@@ -1,42 +1,46 @@
-from __future__ import annotations
-
 import sys
 from pathlib import Path
 
-from app.services.file_scanner import FileScanner
-from app.utils.path_utils import ensure_directory
-
-
-def get_directory_from_user() -> Path:
-    """Получает путь к папке из аргумента командной строки или через input."""
-    if len(sys.argv) > 1:
-        return Path(sys.argv[1])
-
-    raw_path = input("Введите путь к папке для сканирования: ").strip()
-    return Path(raw_path)
+from app.services.duplicate_finder import find_duplicates
+from app.services.file_scanner import scan_files
+from app.utils.path_utils import validate_directory
 
 
 def main() -> None:
-    directory = get_directory_from_user()
-
-    try:
-        directory = ensure_directory(directory)
-    except ValueError as error:
-        print(f"Ошибка: {error}")
+    if len(sys.argv) < 2:
+        print("Использование:")
+        print(r'python -m app.main "C:\путь\к\папке"')
         return
 
-    scanner = FileScanner()
-    files = scanner.scan(directory)
+    folder = Path(sys.argv[1])
 
-    print(f"\nНайдено файлов: {len(files)}")
-    print("-" * 60)
+    if not validate_directory(folder):
+        print(f"Ошибка: папка не найдена -> {folder}")
+        return
 
-    for file_info in files:
-        print(f"Имя: {file_info.name}")
-        print(f"Путь: {file_info.path}")
-        print(f"Размер: {file_info.size} байт")
-        print(f"Расширение: {file_info.extension or 'без расширения'}")
-        print("-" * 60)
+    print(f"Сканирование папки: {folder}")
+    files = scan_files(folder)
+    print(f"Всего найдено файлов: {len(files)}")
+
+    duplicates = find_duplicates(files)
+
+    if not duplicates:
+        print("\nДубликаты не найдены.")
+        return
+
+    print(f"\nНайдено групп дубликатов: {len(duplicates)}\n")
+
+    for group_index, ((file_hash, extension), group) in enumerate(duplicates.items(), start=1):
+        print(f"Группа {group_index}")
+        print(f"Расширение: {extension if extension else '[без расширения]'}")
+        print(f"Хеш: {file_hash}")
+        print(f"Количество файлов: {len(group)}")
+
+        for file in group:
+            print(f" - {file.name} | {file.size} bytes")
+            print(f"   {file.path}")
+
+        print()
 
 
 if __name__ == "__main__":
