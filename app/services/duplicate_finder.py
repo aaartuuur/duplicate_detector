@@ -1,18 +1,21 @@
 from collections import defaultdict
-from typing import Dict, List, Tuple
 
 from app.models.file_info import FileInfo
 from app.services.hash_service import calculate_file_hash
 
+DuplicateGroups = dict[tuple[str, str], list[FileInfo]]
 
-def find_duplicates(files: List[FileInfo]) -> Dict[Tuple[str, str], List[FileInfo]]:
-    groups_by_size_and_extension = defaultdict(list)
+
+def find_duplicates(files: list[FileInfo]) -> DuplicateGroups:
+    """Находит дубликаты по размеру, расширению и SHA-256."""
+
+    groups_by_size_and_extension: dict[tuple[int, str], list[FileInfo]] = defaultdict(list)
 
     for file in files:
         key = (file.size, file.extension.lower())
         groups_by_size_and_extension[key].append(file)
 
-    hash_groups = defaultdict(list)
+    hash_groups: dict[tuple[str, str], list[FileInfo]] = defaultdict(list)
 
     for group in groups_by_size_and_extension.values():
         if len(group) < 2:
@@ -25,10 +28,8 @@ def find_duplicates(files: List[FileInfo]) -> Dict[Tuple[str, str], List[FileInf
             except OSError:
                 print(f"Не удалось вычислить хеш: {file.path}")
 
-    duplicates = {
+    return {
         key: group
         for key, group in hash_groups.items()
         if len(group) > 1
     }
-
-    return duplicates
